@@ -1,0 +1,1 @@
+/usr/bin/g++-12 -Wall -fpermissive -O2 CMakeFiles/demoapp.dir/demoapp.cpp.o -o ../bin/demoapp  -lpthread 

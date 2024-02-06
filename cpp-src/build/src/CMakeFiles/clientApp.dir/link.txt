@@ -1,0 +1,1 @@
+/usr/bin/g++-12 -Wall -fpermissive -O2 CMakeFiles/clientApp.dir/apps/ClientApp.cpp.o -o ../bin/clientApp  ../lib/libbasic_socket.a -lpthread 
