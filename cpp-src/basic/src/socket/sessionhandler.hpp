@@ -24,6 +24,7 @@ public:
   Session(const Session &s);
 
   void incr(unsigned int by = 1);
+  void decr(unsigned int by = 1);
   Session &operator=(const Session &from);
 };
 

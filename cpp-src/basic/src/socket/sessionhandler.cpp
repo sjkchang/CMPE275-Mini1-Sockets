@@ -16,6 +16,11 @@ void basic::Session::incr(unsigned int by) {
     this->count += by;
 }
 
+void basic::Session::decr(unsigned int by) {
+  if (by > 0)
+    this->count -= by;
+}
+
 basic::Session::Session(const basic::Session &s) : fd(s.fd), count(s.count) {}
 
 basic::Session &basic::Session::operator=(const Session &from) {

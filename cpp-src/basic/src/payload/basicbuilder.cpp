@@ -28,23 +28,29 @@ std::vector<std::string> basic::BasicBuilder::split(const std::string &s) {
 
 std::string basic::BasicBuilder::encode(const basic::Message &m) {
 
-  // payload
-  std::string r = m.group();
-  r += ",";
-  r += m.name();
-  r += ",";
-  r += m.text();
+  // payload = group,name,text
+  std::string payload = m.group() + "," + m.name() + "," + m.text();
 
   // a message = header + payload
-  std::stringstream ss;
-  ss << std::setfill('0') << std::setw(4) << r.length() << ","
-     << r; // NO! << std::ends;
+  std::ostringstream oss;
+  oss << std::setfill('0') << std::setw(4) << payload.length() << ","
+      << payload; // NO! << std::ends;
 
-  return ss.str();
+  return oss.str();
 }
 
 basic::Message basic::BasicBuilder::decode(std::string raw) {
-  auto parts = split(raw);
-  basic::Message m(parts[1], parts[0], parts[2]);
+  std::vector<std::string> parts;
+  std::istringstream iss(raw);
+  std::string part;
+  while (std::getline(iss, part, ',')) {
+    parts.push_back(part);
+  }
+
+  if (parts.size() != 4) {
+    throw std::invalid_argument("message format error: " + raw);
+  }
+
+  basic::Message m(parts[2], parts[1], parts[3]);
   return m;
 }
