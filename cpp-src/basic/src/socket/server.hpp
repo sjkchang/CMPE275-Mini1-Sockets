@@ -12,31 +12,29 @@ namespace basic {
  * @brief server class setup
  */
 class BasicServer {
-   private:  
-      std::string ipaddr;
-      unsigned int portN;
-      bool good;
-      int svr;
-      SessionHandler sessions;
+private:
+  std::string ipaddr;
+  unsigned int portN;
+  bool good;
+  int svr;
+  SessionHandler sessions;
 
-   public: 
+public:
+  BasicServer() : ipaddr("127.0.0.1"), portN(2000), good(true), svr(-1) {}
+  BasicServer(std::string ipaddr, unsigned int port);
 
-      BasicServer() : ipaddr("127.0.0.1"), portN(2000), good(true), svr(-1) {}
-      BasicServer(std::string ipaddr, unsigned int port);
+  virtual ~BasicServer() { stop(); }
 
-      virtual ~BasicServer() {stop();}
+  int port() const { return (int)this->portN; }
+  std::string ipaddress() const { return this->ipaddr; }
 
-      int port() const {return (int) this->portN;}
-      std::string ipaddress() const {return this->ipaddr;}
+  void stop();
+  void start() noexcept(false);
 
-      void stop();
-      void start() noexcept(false);
-
-   private:
-
-      void connect() noexcept(false);
+private:
+  void connect() noexcept(false);
 };
 
-} // basic
+} // namespace basic
 
 #endif
