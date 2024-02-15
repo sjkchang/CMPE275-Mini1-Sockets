@@ -14,6 +14,8 @@ class BasicClient(object):
             raise ValueError("IP address is missing or empty")
         elif self.port is None:
             raise ValueError("port number is missing")
+        elif self.port <=1024:
+           raise ValueError(f"port number ({port}) must be above 1024")
 
         self.connect()
 
@@ -57,10 +59,6 @@ class BasicClient(object):
 
 if __name__ == '__main__':
     clt = BasicClient("frida_kahlo","127.0.0.1",2000)
-    while True:
-        m = input("enter message: ")
-        if m == '' or m == 'exit':
-            break
-        else:
-            clt.sendMsg(m)
-            clt.sendMsg(m)
+    
+    for i in range(10):
+        clt.sendMsg(f"message {i}")

@@ -29,10 +29,7 @@ class BasicServer(object):
  
    def run(self):
       addr = (self.ipaddr,self.port)
-      if socket.has_dualstack_ipv6():
-         self._svr = socket.create_server(addr, family=socket.AF_INET6, dualstack_ipv6=True)
-      else:
-         self._svr = socket.create_server(addr)
+      self._svr = socket.create_server(addr)
       self._svr.listen(10)
 
       print(f"server ({self.ipaddr}) is listening on {self.port}")
