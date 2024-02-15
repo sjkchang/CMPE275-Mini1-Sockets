@@ -29,7 +29,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VER
    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g --analyze -Xanalyzer -analyzer-output=html -o report")
 
    # Opt 3: to run sanitize on your code
-   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address -fsanitize-address-use-after-scope")
+   #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fsanitize=address -fsanitize-address-use-after-scope")
 
    # Opt 4: to use clang-tidy w/o database
    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -37,7 +37,6 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VER
 
 else ()
    # if using any other compiler/version, fail
-   message("Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
    message(FATAL_ERROR "Using the wrong compiler, clang 16+, or gcc 12+")
 endif()
 
