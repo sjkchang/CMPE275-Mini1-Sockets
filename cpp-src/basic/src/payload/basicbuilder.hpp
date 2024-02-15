@@ -12,17 +12,19 @@ namespace basic {
  * @brief conversion of raw data to objects
  */
 class BasicBuilder {
-private:
-  std::vector<std::string> split(const std::string &s);
+   private:  
+     std::vector<std::string> split(const std::string& s);
 
-public:
-  BasicBuilder() {}
-  virtual ~BasicBuilder() {}
+   public: 
+     BasicBuilder() {}
+     virtual ~BasicBuilder() {}
 
-  std::string encode(const Message &m);
-  Message decode(std::string raw);
+     std::string encode(const Message& m);
+     Message decode(std::string raw);
+
+  
 };
 
-} // namespace basic
+} // basic
 
 #endif

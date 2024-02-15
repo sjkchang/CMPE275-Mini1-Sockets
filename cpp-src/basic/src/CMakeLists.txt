@@ -28,4 +28,4 @@ install(TARGETS serverApp clientApp CONFIGURATIONS Release
 
 
 # for clang
-#set_target_properties(clientApp PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
+set_target_properties(clientApp PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")

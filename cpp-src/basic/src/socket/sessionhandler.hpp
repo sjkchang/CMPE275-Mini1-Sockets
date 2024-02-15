@@ -17,6 +17,7 @@ public:
   int fd;
   unsigned long count;
   uint64_t lastTime;
+  std::vector<char> overflow_buffer;
 
 public:
   Session() : fd(-1), count(0) {}
@@ -24,7 +25,6 @@ public:
   Session(const Session &s);
 
   void incr(unsigned int by = 1);
-  void decr(unsigned int by = 1);
   Session &operator=(const Session &from);
 };
 

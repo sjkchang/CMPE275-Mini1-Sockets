@@ -16,11 +16,6 @@ void basic::Session::incr(unsigned int by) {
     this->count += by;
 }
 
-void basic::Session::decr(unsigned int by) {
-  if (by > 0)
-    this->count -= by;
-}
-
 basic::Session::Session(const basic::Session &s) : fd(s.fd), count(s.count) {}
 
 basic::Session &basic::Session::operator=(const Session &from) {
@@ -240,8 +235,9 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
       auto msg = std::string(&ptr[pos], 0, mlen + 5);
       pos += 5 + mlen; // NNNN+1 for comma
 
+      // Message is Parsed
       if (pos <= len + 1) {
-        if (sDebug > 1)
+        if (sDebug > 0)
           std::cerr << "new msg: " << msg << std::endl;
         results.push_back(msg);
         while (ptr[pos] == '\0' && pos < len)
