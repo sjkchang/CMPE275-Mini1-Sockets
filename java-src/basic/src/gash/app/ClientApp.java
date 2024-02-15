@@ -26,15 +26,23 @@ public class ClientApp {
 		var br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
 			try {
-				System.out.print("\nenter message ('exit' to quit): ");
-				var m = br.readLine();
+				System.out.print("\nenter how many messages to send ('exit' to quit): ");
+				String m = br.readLine();
 				if (m.length() == 0 || "exit".equalsIgnoreCase(m))
 					break;
 
-				myClient.sendMessage(m);
+                int numMessages = Integer.parseInt(m);
+				for (int i = 0; i < numMessages; i++) {
+                    try {
+                        myClient.sendMessage("This is message # " + i + "\n");
+                    } catch (Exception ex) {
+                        break;
+                    }
+                }
 			} catch (Exception ex) {
 				break;
 			}
 		}
+		
 	}
 }
