@@ -191,28 +191,24 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
   if (raw == NULL || len <= 0)
     return results;
 
-#ifdef CPLUSPLUSONLY
-  const char *ptr = raw;
-  while (*ptr) {
-    // uses the fact that C/C++ strings terminate with a null (\0) and
-    // std::string copies up to the '\0'. We copy and move the pointer
-    // past the embedded null to the next substring until the end of raw.
-    results.push_back(ptr);
-    ptr += results.back().length() + 1;
+  // If the overlow buffer is not empty, then we need to append the new raw
+  // data to the overflow buffer and process the combined buffer.
+  std::string buffer;
+  if (!s.overflow_buffer.empty()) {
+    buffer = std::string(s.overflow_buffer.begin(), s.overflow_buffer.end()) +
+             std::string(raw, len);
+    raw = buffer.c_str();
+    len = buffer.size();
+    s.overflow_buffer.clear();
   }
-#else
-  // sometimes raw may contain null (\0) chars embedded between messages
-  // and trailing. YET, YET, not always therefore, we must parse using
-  // the header and check it against the length of raw.
-
-  if (sDebug > 2) {
+  if (sDebug > 1) {
     std::cerr << "----------------------------------------------" << std::endl;
     std::cerr << "---> raw: " << raw << std::endl;
 
-    // for (auto i = 0;i<len;i++){
-    //    std::cerr << "          " << i << ") '" << raw[i]
-    //              << "'" << std::endl;
-    // }
+    /*
+    for (auto i = 0; i < len; i++) {
+      std::cerr << "          " << i << ") '" << raw[i] << "'" << std::endl;
+    }*/
   }
 
   auto pos = 0;
@@ -220,16 +216,34 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
   while (pos < len) {
     try {
       if (len - pos < 5) {
-        pos = len;
-        continue;
+        break;
       }
 
       std::string tmp = std::string(&ptr[pos], 0, 4);
+      std::cerr << "parsed message length: " << tmp << std::endl;
       int mlen = std::stoi(tmp);
       if (mlen > len - (pos + 5)) {
         // message is incomplete, push to overflow
-        pos = len;
-        continue;
+
+        // Push remainer of message to overflow buffer
+        // std::string tmp = "0047,public,anonymous,hello.M";
+        std::string tmp = std::string(&ptr[pos], 0, len - pos);
+        std::cerr << "tmp: " << tmp << std::endl;
+        std::cerr << "pos: " << pos << std::endl;
+        std::cerr << "len: " << len << std::endl;
+
+        std::copy(tmp.begin(), tmp.end(),
+                  std::back_inserter(s.overflow_buffer));
+        if (sDebug > 1) {
+          std::cerr << "overflow: " << mlen << " > " << len - (pos + 5)
+                    << std::endl;
+
+          for (char c : s.overflow_buffer) {
+            std::cerr << c << std::endl;
+          }
+        }
+
+        break;
       }
 
       auto msg = std::string(&ptr[pos], 0, mlen + 5);
@@ -237,7 +251,7 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
 
       // Message is Parsed
       if (pos <= len + 1) {
-        if (sDebug > 0)
+        if (sDebug > 2)
           std::cerr << "new msg: " << msg << std::endl;
         results.push_back(msg);
         while (ptr[pos] == '\0' && pos < len)
@@ -252,7 +266,6 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
 
   if (sDebug > 1)
     std::cerr << "---> got " << results.size() << " messages" << std::endl;
-#endif
 
   return results;
 }

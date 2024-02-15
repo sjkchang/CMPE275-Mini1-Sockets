@@ -29,9 +29,9 @@ int main(int argc, char **argv) {
 
   for (int i = 0; i < numMessages; ++i) {
     std::stringstream msg;
-    msg << "hello. My name is inigo montoya. " << std::to_string(i)
-        << std::ends;
+    msg << "hello. My name is inigo montoya." << std::to_string(i) << std::ends;
     clt.sendMessage(msg.str());
+    std::this_thread::sleep_for(std::chrono::milliseconds(7));
   }
 
   std::cout << "sleeping a bit before exiting..." << std::endl;
