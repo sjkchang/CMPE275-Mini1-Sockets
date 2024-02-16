@@ -21,9 +21,9 @@ being performant and hardened:
 
 | Clt/Svr | Java | Python3 | C/C++ |
 | ------- | :--: | :-----: | :---: |
-| Java    |  Y   |         |   Y   |
-| Python3 |      |    Y    |   Y   |
-| C/C++   |      |    Y    |   Y   |
+| Java    |  Y   |    Y    |   Y   |
+| Python3 |  Y   |    Y    |   Y   |
+| C/C++   |  Y   |    Y    |   Y   |
 
 Regarding features. It can be tempting to extend functionality
 with features like rooms/groups, rankings, authentication, hashtags;
