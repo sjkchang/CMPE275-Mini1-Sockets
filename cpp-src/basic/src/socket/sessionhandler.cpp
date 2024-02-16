@@ -215,19 +215,32 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
   auto *ptr = &raw[0];
   while (pos < len) {
     try {
+
+      // Message length header is inclomplete, push to overflow
       if (len - pos < 5) {
+        // message is incomplete, push to overflow
+        std::cerr << "incomplete message" << std::endl;
+
+        std::string tmp = std::string(&ptr[pos], len - pos);
+        std::cerr << "tmp: " << tmp << std::endl;
+        std::cerr << "pos: " << pos << std::endl;
+        std::cerr << "len: " << len << std::endl;
+
+        std::copy(tmp.begin(), tmp.end(),
+                  std::back_inserter(s.overflow_buffer));
+
         break;
       }
 
-      std::string tmp = std::string(&ptr[pos], 0, 4);
-      std::cerr << "parsed message length: " << tmp << std::endl;
-      int mlen = std::stoi(tmp);
+      std::string msgLen = std::string(&ptr[pos], 4);
+      std::cerr << "parsed message length: " << msgLen << std::endl;
+      int mlen = std::stoi(msgLen);
       if (mlen > len - (pos + 5)) {
         // message is incomplete, push to overflow
 
         // Push remainer of message to overflow buffer
         // std::string tmp = "0047,public,anonymous,hello.M";
-        std::string tmp = std::string(&ptr[pos], 0, len - pos);
+        std::string tmp = std::string(&ptr[pos], len - pos);
         std::cerr << "tmp: " << tmp << std::endl;
         std::cerr << "pos: " << pos << std::endl;
         std::cerr << "len: " << len << std::endl;
@@ -246,7 +259,7 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
         break;
       }
 
-      auto msg = std::string(&ptr[pos], 0, mlen + 5);
+      auto msg = std::string(&ptr[pos], mlen + 5);
       pos += 5 + mlen; // NNNN+1 for comma
 
       // Message is Parsed
