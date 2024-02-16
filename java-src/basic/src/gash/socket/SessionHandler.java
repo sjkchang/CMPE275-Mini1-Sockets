@@ -3,6 +3,7 @@ package gash.socket;
 import java.io.BufferedInputStream;
 import java.io.InterruptedIOException;
 import java.net.Socket;
+import java.util.ArrayList;
 
 import gash.payload.BasicBuilder;
 import gash.payload.Message;
@@ -56,17 +57,55 @@ class SessionHandler extends Thread {
 
 			byte[] raw = new byte[2048];
 			BasicBuilder builder = new BasicBuilder();
+            ArrayList<Byte> overflow_buffer = new ArrayList<>();
 			while (forever) {
 				try {
-					int len = in.read(raw);
-					if (len == 0)
+					int bytesRead = in.read(raw);
+					if (bytesRead == 0){
 						continue;
-					else if (len == -1)
+                    } else if (bytesRead == -1){
 						break;
+                    }
 
-					Message msg = builder.decode(new String(raw, 0, len).getBytes());
-					System.out.println(msg);
-					
+                    if(overflow_buffer.size() > 0){
+                        byte[] temp = new byte[overflow_buffer.size() + bytesRead];
+                        for(int i = 0; i < overflow_buffer.size(); i++){
+                            temp[i] = overflow_buffer.get(i);
+                        }
+                        for(int i = 0; i < bytesRead; i++){
+                            temp[i + overflow_buffer.size()] = raw[i];
+                        }
+                        raw = temp;
+                        bytesRead = raw.length;
+                        overflow_buffer.clear();
+                    }
+
+                    int pos = 0;
+                    while(pos < bytesRead){
+                        // Check if we have enough bytes to read the length of the message
+                        if(bytesRead - pos < 5){
+                            for(int i = pos; i < bytesRead; i++){
+                                overflow_buffer.add(raw[i]);
+                            }
+                            break;
+                        }
+
+                        // Read the length of the message
+                        int messageLength = Integer.parseInt(new String(raw, pos, 4));
+                        System.out.println("Message Length: " + messageLength);
+                        if(messageLength + (pos + 5) > bytesRead){
+                            for(int i = pos; i < bytesRead; i++){
+                                overflow_buffer.add(raw[i]);
+                            }
+                            break;
+                        }
+
+                        Message msg = builder.decode(new String(raw, pos, messageLength + 5).getBytes());
+                        System.out.println("[L]: " + msg.toString().length() +"[T]: " + msg.getClass().getName() + " [M]: " + msg );
+                        pos += messageLength + 5;
+                    }
+
+                
 				} catch (InterruptedIOException ioe) {
 				}
 			}

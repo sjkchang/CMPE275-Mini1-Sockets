@@ -218,43 +218,19 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
 
       // Message length header is inclomplete, push to overflow
       if (len - pos < 5) {
-        // message is incomplete, push to overflow
-        std::cerr << "incomplete message" << std::endl;
-
+        // message is incomplete, push remainer of message to overflow buffer
         std::string tmp = std::string(&ptr[pos], len - pos);
-        std::cerr << "tmp: " << tmp << std::endl;
-        std::cerr << "pos: " << pos << std::endl;
-        std::cerr << "len: " << len << std::endl;
-
         std::copy(tmp.begin(), tmp.end(),
                   std::back_inserter(s.overflow_buffer));
-
         break;
       }
 
-      std::string msgLen = std::string(&ptr[pos], 4);
-      std::cerr << "parsed message length: " << msgLen << std::endl;
-      int mlen = std::stoi(msgLen);
+      int mlen = std::stoi(std::string(&ptr[pos], 4));
       if (mlen > len - (pos + 5)) {
-        // message is incomplete, push to overflow
-
-        // Push remainer of message to overflow buffer
-        // std::string tmp = "0047,public,anonymous,hello.M";
+        // message is incomplete, push remainer of message to overflow buffer
         std::string tmp = std::string(&ptr[pos], len - pos);
-        std::cerr << "tmp: " << tmp << std::endl;
-        std::cerr << "pos: " << pos << std::endl;
-        std::cerr << "len: " << len << std::endl;
-
         std::copy(tmp.begin(), tmp.end(),
                   std::back_inserter(s.overflow_buffer));
-        if (sDebug > 1) {
-          std::cerr << "overflow: " << mlen << " > " << len - (pos + 5)
-                    << std::endl;
-
-          for (char c : s.overflow_buffer) {
-            std::cerr << c << std::endl;
-          }
-        }
 
         break;
       }

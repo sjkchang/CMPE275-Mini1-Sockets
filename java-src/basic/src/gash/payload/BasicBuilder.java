@@ -14,7 +14,7 @@ public class BasicBuilder {
 
 	public String encode(Message msg) {
         var payload = msg.getGroup() + "," + msg.getName() + "," + msg.getText();
-		return String.format("%04d", payload.length() + "," + payload);
+		return String.format("%04d", payload.length())  + "," + payload;
 	}
 
 	public Message decode(byte[] raw) throws Exception {

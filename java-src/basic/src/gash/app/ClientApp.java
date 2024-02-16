@@ -21,7 +21,7 @@ public class ClientApp {
 	public static void main(String[] args) {
 		var myClient = new BasicClient("app", "127.0.0.1", 2000);
 		myClient.connect();
-		myClient.join("pets/dogs");
+		myClient.join("petsadogs");
 
 		var br = new BufferedReader(new InputStreamReader(System.in));
 		while (true) {
@@ -34,7 +34,8 @@ public class ClientApp {
                 int numMessages = Integer.parseInt(m);
 				for (int i = 0; i < numMessages; i++) {
                     try {
-                        myClient.sendMessage("This is message # " + i + "\n");
+                        myClient.sendMessage("This is message # " + String.valueOf(i));
+                        System.out.println("sent message " + i);
                     } catch (Exception ex) {
                         break;
                     }
