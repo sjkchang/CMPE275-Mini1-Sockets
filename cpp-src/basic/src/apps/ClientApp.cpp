@@ -25,12 +25,13 @@ int main(int argc, char **argv) {
   }
 
   basic::BasicClient clt;
+  clt.setName("performance");
+  clt.join("public");
   clt.connect();
 
   for (int i = 0; i < numMessages; ++i) {
     std::stringstream msg;
-    msg << "hello. My name is inigo montoya. " << std::to_string(i)
-        << std::ends;
+    msg << "This is message # " << std::to_string(i) << std::ends;
     clt.sendMessage(msg.str());
   }
 

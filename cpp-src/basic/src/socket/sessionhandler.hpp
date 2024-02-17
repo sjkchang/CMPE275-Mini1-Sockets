@@ -24,6 +24,7 @@ public:
   Session(int sock, unsigned long c) : fd(sock), count(c) {}
   Session(const Session &s);
 
+  void pushToOverflow(const char *buf, int len);
   void incr(unsigned int by = 1);
   Session &operator=(const Session &from);
 };

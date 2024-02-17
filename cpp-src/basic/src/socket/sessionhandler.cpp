@@ -24,6 +24,15 @@ basic::Session &basic::Session::operator=(const Session &from) {
   return *this;
 }
 
+/*
+ * Pushes the buffer from pos to len to the overflow buffer
+ */
+void basic::Session::pushToOverflow(const char *buf, int len) {
+  std::string tmp = std::string(buf, len);
+  std::copy(tmp.begin(), tmp.end(), std::back_inserter(overflow_buffer));
+  return;
+}
+
 basic::SessionHandler::SessionHandler() {
   this->good = true;
   this->refreshRate = 0;
@@ -92,11 +101,11 @@ bool basic::SessionHandler::cycle() {
 
     /*
        important errno values:
-       35 (EWOULDBLOCK)  - nonblocking mode, no data is available (not an error)
-       38 (ENOTSOCK)     - socket descriptor (fd) is not valid
-       42 (EPROTOTYPE)   - socket option not supported
-       54 (ECONNRESET)   - connection not available (bad)
-       60 (ETIMEDOUT)    - connection (read) timed out (maybe bad)
+       35 (EWOULDBLOCK)  - nonblocking mode, no data is available (not an
+       error) 38 (ENOTSOCK)     - socket descriptor (fd) is not valid 42
+       (EPROTOTYPE)   - socket option not supported 54 (ECONNRESET)   -
+       connection not available (bad) 60 (ETIMEDOUT)    - connection (read)
+       timed out (maybe bad)
 
        Ref:
        https://www.ibm.com/docs/en/zos/2.2.0?topic=errnos-sockets-return-code
@@ -201,15 +210,6 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
     len = buffer.size();
     s.overflow_buffer.clear();
   }
-  if (sDebug > 1) {
-    std::cerr << "----------------------------------------------" << std::endl;
-    std::cerr << "---> raw: " << raw << std::endl;
-
-    /*
-    for (auto i = 0; i < len; i++) {
-      std::cerr << "          " << i << ") '" << raw[i] << "'" << std::endl;
-    }*/
-  }
 
   auto pos = 0;
   auto *ptr = &raw[0];
@@ -218,23 +218,20 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
 
       // Message length header is inclomplete, push to overflow
       if (len - pos < 5) {
-        // message is incomplete, push remainer of message to overflow buffer
-        std::string tmp = std::string(&ptr[pos], len - pos);
-        std::copy(tmp.begin(), tmp.end(),
-                  std::back_inserter(s.overflow_buffer));
+        // Message header is incomplete, push to overflow buffer
+        s.pushToOverflow(&ptr[pos], len - pos);
         break;
       }
 
+      // Message length header is complete, parse message
       int mlen = std::stoi(std::string(&ptr[pos], 4));
       if (mlen > len - (pos + 5)) {
-        // message is incomplete, push remainer of message to overflow buffer
-        std::string tmp = std::string(&ptr[pos], len - pos);
-        std::copy(tmp.begin(), tmp.end(),
-                  std::back_inserter(s.overflow_buffer));
-
+        // Message is incomplete, push to overflow buffer
+        s.pushToOverflow(&ptr[pos], len - pos);
         break;
       }
 
+      // Message is complete, parse message
       auto msg = std::string(&ptr[pos], mlen + 5);
       pos += 5 + mlen; // NNNN+1 for comma
 
@@ -243,6 +240,8 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
         if (sDebug > 2)
           std::cerr << "new msg: " << msg << std::endl;
         results.push_back(msg);
+
+        // Skip nulls if any
         while (ptr[pos] == '\0' && pos < len)
           pos++;
       }

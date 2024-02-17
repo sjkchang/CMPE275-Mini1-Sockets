@@ -58,8 +58,8 @@ class BasicClient(object):
 
 
 if __name__ == '__main__':
-    clt = BasicClient("frida_kahlo","127.0.0.1",2000)
-    
+    clt = BasicClient("performance","127.0.0.1",2000)
+    clt.join("public")
     numMessages = input("How many messages:")
     for i in range(int(numMessages)):
-        clt.sendMsg(f"message {i}")
+        clt.sendMsg(f"This is message # {i}")
