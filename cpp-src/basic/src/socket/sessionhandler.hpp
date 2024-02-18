@@ -7,6 +7,7 @@
 #include <thread>
 #include <vector>
 
+#define BUFFER_SIZE 65536
 namespace basic {
 
 /**
@@ -19,9 +20,23 @@ public:
   uint64_t lastTime;
   std::vector<char> overflow_buffer;
 
+  // time tracking for session duration
+  bool done = false;
+  std::chrono::_V2::system_clock::time_point start;
+  std::chrono::_V2::system_clock::time_point end;
+
 public:
-  Session() : fd(-1), count(0) {}
-  Session(int sock, unsigned long c) : fd(sock), count(c) {}
+  Session() {
+    fd = -1;
+    count = 0;
+    start = std::chrono::high_resolution_clock::now();
+  }
+  Session(int sock, unsigned long c) {
+    fd = sock;
+    count = c;
+    start = std::chrono::high_resolution_clock::now();
+  }
+
   Session(const Session &s);
 
   void pushToOverflow(const char *buf, int len);

@@ -16,7 +16,9 @@ void basic::Session::incr(unsigned int by) {
     this->count += by;
 }
 
-basic::Session::Session(const basic::Session &s) : fd(s.fd), count(s.count) {}
+basic::Session::Session(const basic::Session &s)
+    : fd(s.fd), count(s.count),
+      start(std::chrono::high_resolution_clock::now()) {}
 
 basic::Session &basic::Session::operator=(const Session &from) {
   this->fd = from.fd;
@@ -28,8 +30,7 @@ basic::Session &basic::Session::operator=(const Session &from) {
  * Pushes the buffer from pos to len to the overflow buffer
  */
 void basic::Session::pushToOverflow(const char *buf, int len) {
-  std::string tmp = std::string(buf, len);
-  std::copy(tmp.begin(), tmp.end(), std::back_inserter(overflow_buffer));
+  overflow_buffer.insert(overflow_buffer.end(), &buf[0], &buf[len]);
   return;
 }
 
@@ -64,7 +65,9 @@ void basic::SessionHandler::start() {
 }
 
 void basic::SessionHandler::addSession(int sessionSock) {
-  this->sessions.emplace_back(std::move(Session(sessionSock, 0)));
+  Session s(sessionSock, 0);
+  s.start = std::chrono::high_resolution_clock::now();
+  this->sessions.emplace_back(std::move(s));
 }
 
 /**
@@ -94,7 +97,7 @@ void basic::SessionHandler::run() {
  */
 bool basic::SessionHandler::cycle() {
   bool idle = true;
-  char raw[2048] = {0};
+  char raw[BUFFER_SIZE] = {0};
   for (auto &session : this->sessions) {
     if (session.fd == -1)
       continue;
@@ -112,12 +115,12 @@ bool basic::SessionHandler::cycle() {
     */
 
     // reusable buffer to minimize memory fragmentation
-    std::memset(raw, 0, 2048);
+    std::memset(raw, 0, BUFFER_SIZE);
 
     // auto n = ::recv(session.fd,raw,Session::sOFSize-1,0);
-    auto n = ::read(session.fd, raw, 2047);
+    auto n = ::read(session.fd, raw, BUFFER_SIZE - 1);
 
-    if (sDebug > 0 && n > 0) {
+    if (sDebug > 1 && n > 0) {
       std::cerr << "---> session " << session.fd << " got n = " << n
                 << ", errno = " << errno << std::endl;
     }
@@ -132,20 +135,32 @@ bool basic::SessionHandler::cycle() {
       if (errno == EWOULDBLOCK) {
       } /*read timeout - okay*/
       else if (errno == ECONNRESET) {
-        std::cerr << "--> a session was closed, [id: " << session.fd
-                  << ", cnt: " << session.count << "]" << std::endl;
-
-        // ref: https://en.wikipedia.org/wiki/Erase–remove_idiom
-        auto xfd = session.fd;
-        this->sessions.erase(
-            std::remove_if(this->sessions.begin(), this->sessions.end(),
-                           [&xfd](const Session &s) { return s.fd == xfd; }),
-            this->sessions.end());
-        idle = false;
-        break;
       }
     } else {
-      // no data
+
+      if (!session.done) {
+        session.done = true;
+        // No Data, Client Closed Connection
+        session.end = std::chrono::high_resolution_clock::now();
+
+        // print start and end time
+        std::chrono::duration<double> elapsed_seconds =
+            session.end - session.start;
+        std::cerr << "Session " << session.fd << " lasted "
+                  << elapsed_seconds.count() << "s\n"
+                  << std::endl;
+      }
+      std::cerr << "--> a session was closed, [id: " << session.fd
+                << ", cnt: " << session.count << "]" << std::endl;
+
+      // ref: https://en.wikipedia.org/wiki/Erase–remove_idiom
+      auto xfd = session.fd;
+      this->sessions.erase(
+          std::remove_if(this->sessions.begin(), this->sessions.end(),
+                         [&xfd](const Session &s) { return s.fd == xfd; }),
+          this->sessions.end());
+      idle = false;
+      break;
     }
   }
 
@@ -160,10 +175,12 @@ void basic::SessionHandler::process(const std::vector<std::string> &results) {
   for (auto s : results) {
     auto m = b.decode(s);
 
+    /*
     // PLACEHOLDER: now do something with the message
     std::cerr << "M: [" << m.group() << "] " << m.name() << " - " << m.text()
               << std::endl;
     std::cerr.flush();
+    */
   }
 }
 
@@ -237,7 +254,7 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
 
       // Message is Parsed
       if (pos <= len + 1) {
-        if (sDebug > 2)
+        if (sDebug > 1)
           std::cerr << "new msg: " << msg << std::endl;
         results.push_back(msg);
 
