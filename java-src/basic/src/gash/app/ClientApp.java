@@ -24,15 +24,15 @@ public class ClientApp {
 		myClient.join("public");
 
 		var br = new BufferedReader(new InputStreamReader(System.in));
-		while (true) {
-			try {
-				System.out.print("\nenter how many messages to send ('exit' to quit): ");
-				String m = br.readLine();
-				if (m.length() == 0 || "exit".equalsIgnoreCase(m))
-					break;
+		//while (true) {
+			//try {
+				//System.out.print("\nenter how many messages to send ('exit' to quit): ");
+				//String m = br.readLine();
+				//if (m.length() == 0 || "exit".equalsIgnoreCase(m))
+					//break;
 
-                int numMessages = Integer.parseInt(m);
-				for (int i = 0; i < numMessages; i++) {
+                //int numMessages = Integer.parseInt(m);
+				for (int i = 0; i < 100000; i++) {
                     try {
                         myClient.sendMessage("This is message # " + String.valueOf(i));
                         System.out.println("sent message " + i);
@@ -40,10 +40,10 @@ public class ClientApp {
                         break;
                     }
                 }
-			} catch (Exception ex) {
-				break;
-			}
-		}
+			//} catch (Exception ex) {
+				//break;
+			//}
+		//}
 		
 	}
 }

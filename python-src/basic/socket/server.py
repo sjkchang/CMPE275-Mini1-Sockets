@@ -49,6 +49,7 @@ class SessionHandler(threading.Thread):
         self._cltconn = client_connection
         self._cltaddr = client_addr
         self.good = True
+        self.overflow=""
 
     def __del__(self):
         self.close()
@@ -62,10 +63,38 @@ class SessionHandler(threading.Thread):
             self.good = False
 
     def process(self,raw):
+        results = []
         try:
+            if(len(self.overflow) > 0):
+                raw = self.overflow + raw
+                self.overflow = ""
+
+            pos = 0
+            while pos < len(raw):
+                if (len(raw) - pos) < 5:
+                    self.overflow = raw
+                    break
+                
+                messageLen = int(raw[pos:pos+4])
+                # If message is incomplete, save it for next time
+                if(messageLen > (len(raw) - (pos + 5))):
+                    self.overflow = raw[pos: len(raw) - pos]
+                    break
+            
+                # Process message
+                message = raw[pos+5:pos+5+messageLen]
+                pos += 5 + messageLen
+
+                if pos <= len(raw) + 1:
+                    results.append(message)
+                    while raw[pos] == '\0' and pos < len(raw):
+                        pos += 1
+
+
             bldr = builder.BasicBuilder()
-            name,group,text = bldr.decode(raw)
-            print(f"from {name}, to group: {group}, text: {text}")
+            for msg in results:
+                name,group,text = bldr.decode(msg)
+                print(f"from {name}, to group: {group}, text: {text}")
         except Exception as e:
             pass
 
@@ -78,6 +107,7 @@ class SessionHandler(threading.Thread):
                 else:
                     self.process(buf.decode("utf-8"))
             except Exception as e:
+                print(f"error: {e}")
                 print(e)
                 self.good = False
 

@@ -8,10 +8,10 @@ class BasicBuilder(object):
         payload = (f"{group},{name},{msg}")
         return (f"{len(payload):04d},{payload}")
 
-    def decode(self, raw):
+    def decode(self, message):
         # TODO complete parsing
-        parts = raw.split(",", 4)
-        if len(parts) is not 4:
-            raise ValueError(f"message format error: {raw}")
+        parts = message.split(",", 3)
+        if len(parts) is not 3:
+            raise ValueError(f"message format error: {message}")
         else:
-            return parts[2],parts[1],parts[3]
+            return parts[1],parts[0],parts[2]
