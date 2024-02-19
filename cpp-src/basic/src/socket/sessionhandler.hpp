@@ -8,6 +8,11 @@
 #include <vector>
 
 #define BUFFER_SIZE 65536
+#define MESSAGE_SIZE 2048
+#define HEADER_SIZE 5
+#define MAX_REFRESH_RATE 3000
+#define REFRESH_RATE_INCREMENT 250
+
 namespace basic {
 
 /**
@@ -30,11 +35,13 @@ public:
     fd = -1;
     count = 0;
     start = std::chrono::high_resolution_clock::now();
+    overflow_buffer.reserve(MESSAGE_SIZE);
   }
   Session(int sock, unsigned long c) {
     fd = sock;
     count = c;
     start = std::chrono::high_resolution_clock::now();
+    overflow_buffer.reserve(MESSAGE_SIZE);
   }
 
   Session(const Session &s);

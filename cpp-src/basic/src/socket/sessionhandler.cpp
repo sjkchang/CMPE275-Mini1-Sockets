@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -12,13 +13,16 @@
 #include "socket/sessionhandler.hpp"
 
 void basic::Session::incr(unsigned int by) {
-  if (by > 0)
+  if (by > 0) {
     this->count += by;
+  }
 }
 
 basic::Session::Session(const basic::Session &s)
     : fd(s.fd), count(s.count),
-      start(std::chrono::high_resolution_clock::now()) {}
+      start(std::chrono::high_resolution_clock::now()) {
+  overflow_buffer.reserve(MESSAGE_SIZE);
+}
 
 basic::Session &basic::Session::operator=(const Session &from) {
   this->fd = from.fd;
@@ -31,7 +35,6 @@ basic::Session &basic::Session::operator=(const Session &from) {
  */
 void basic::Session::pushToOverflow(const char *buf, int len) {
   overflow_buffer.insert(overflow_buffer.end(), &buf[0], &buf[len]);
-  return;
 }
 
 basic::SessionHandler::SessionHandler() {
@@ -44,8 +47,9 @@ void basic::SessionHandler::stop() {
   for (auto &sitr : this->sessions) {
     Session &session = sitr;
     try {
-      if (session.fd >= 0)
+      if (session.fd >= 0) {
         ::close(session.fd);
+      }
     } catch (...) {
     }
     session.fd = -1;
@@ -82,8 +86,9 @@ void basic::SessionHandler::run() {
       // for purposes of the lab only. Normally, we would
       // try to manage (contain) the error and continue running.
       std::cerr << "---> aborting handler failure: " << e.what() << std::endl;
-      if (sDebug > 0)
+      if (sDebug > 0) {
         std::abort();
+      }
     }
 
     // This is a hook for adaptive polling strategies. You can
@@ -97,10 +102,11 @@ void basic::SessionHandler::run() {
  */
 bool basic::SessionHandler::cycle() {
   bool idle = true;
-  char raw[BUFFER_SIZE] = {0};
+  std::array<char, BUFFER_SIZE> raw = {0};
   for (auto &session : this->sessions) {
-    if (session.fd == -1)
+    if (session.fd == -1) {
       continue;
+    }
 
     /*
        important errno values:
@@ -115,10 +121,10 @@ bool basic::SessionHandler::cycle() {
     */
 
     // reusable buffer to minimize memory fragmentation
-    std::memset(raw, 0, BUFFER_SIZE);
+    std::memset(raw.data(), 0, raw.size());
 
     // auto n = ::recv(session.fd,raw,Session::sOFSize-1,0);
-    auto n = ::read(session.fd, raw, BUFFER_SIZE - 1);
+    auto n = ::read(session.fd, raw.data(), raw.size() - 1);
 
     if (sDebug > 1 && n > 0) {
       std::cerr << "---> session " << session.fd << " got n = " << n
@@ -127,7 +133,7 @@ bool basic::SessionHandler::cycle() {
 
     if (n > 0) {
       idle = false;
-      auto results = splitter(session, raw, n);
+      auto results = splitter(session, raw.data(), n);
       session.incr(results.size());
       process(results);
       results.clear();
@@ -172,7 +178,7 @@ bool basic::SessionHandler::cycle() {
  */
 void basic::SessionHandler::process(const std::vector<std::string> &results) {
   basic::BasicBuilder b;
-  for (auto s : results) {
+  for (const auto &s : results) {
     auto m = b.decode(s);
 
     /*
@@ -195,8 +201,9 @@ void basic::SessionHandler::optimizeAndWait(bool idle) {
 
   if (idle) {
     // gradually slow down polling while no activity
-    if (this->refreshRate < 3000)
-      this->refreshRate += 250;
+    if (this->refreshRate < MAX_REFRESH_RATE) {
+      this->refreshRate += REFRESH_RATE_INCREMENT;
+    }
 
     if (sDebug > 0) {
       std::cerr << this->sessions.size() << " sessions, sleeping "
@@ -204,8 +211,9 @@ void basic::SessionHandler::optimizeAndWait(bool idle) {
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(this->refreshRate));
-  } else
+  } else {
     this->refreshRate = 0;
+  }
 }
 
 /**
@@ -214,8 +222,9 @@ void basic::SessionHandler::optimizeAndWait(bool idle) {
 std::vector<std::string>
 basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
   std::vector<std::string> results;
-  if (raw == NULL || len <= 0)
+  if (raw == nullptr || len <= 0) {
     return results;
+  }
 
   // If the overlow buffer is not empty, then we need to append the new raw
   // data to the overflow buffer and process the combined buffer.
@@ -229,33 +238,34 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
   }
 
   auto pos = 0;
-  auto *ptr = &raw[0];
+  const auto *ptr = &raw[0];
   while (pos < len) {
     try {
 
       // Message length header is inclomplete, push to overflow
-      if (len - pos < 5) {
+      if (len - pos < HEADER_SIZE) {
         // Message header is incomplete, push to overflow buffer
         s.pushToOverflow(&ptr[pos], len - pos);
         break;
       }
 
       // Message length header is complete, parse message
-      int mlen = std::stoi(std::string(&ptr[pos], 4));
-      if (mlen > len - (pos + 5)) {
+      int mlen = std::stoi(std::string(&ptr[pos], HEADER_SIZE - 1));
+      if (mlen > len - (pos + HEADER_SIZE)) {
         // Message is incomplete, push to overflow buffer
         s.pushToOverflow(&ptr[pos], len - pos);
         break;
       }
 
       // Message is complete, parse message
-      auto msg = std::string(&ptr[pos], mlen + 5);
-      pos += 5 + mlen; // NNNN+1 for comma
+      auto msg = std::string(&ptr[pos], mlen + HEADER_SIZE);
+      pos += HEADER_SIZE + mlen; // NNNN+1 for comma
 
       // Message is Parsed
       if (pos <= len + 1) {
-        if (sDebug > 1)
+        if (sDebug > 1) {
           std::cerr << "new msg: " << msg << std::endl;
+        }
         results.push_back(msg);
 
         // Skip nulls if any
@@ -269,8 +279,9 @@ basic::SessionHandler::splitter(Session &s, const char *raw, int len) {
     }
   }
 
-  if (sDebug > 1)
+  if (sDebug > 1) {
     std::cerr << "---> got " << results.size() << " messages" << std::endl;
+  }
 
   return results;
 }
